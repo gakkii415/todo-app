@@ -1,4 +1,4 @@
-name: Todo app
+name: Todoアプリの動作確認
 
 on:
   push:
@@ -14,45 +14,63 @@ permissions:
 
 jobs:
   check:
+    name: 基本動作を確認
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: リポジトリの内容を取得
+        uses: actions/checkout@v4
+      - name: Node.jsを準備
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install
-      - run: npx expo export --platform android --output-dir dist
+      - name: 依存関係をインストール
+        run: npm install
+      - name: Expoで書き出し可能か確認
+        run: npx expo export --platform android --output-dir dist
 
   android-apk:
+    name: Androidアプリをビルド
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: リポジトリの内容を取得
+        uses: actions/checkout@v4
+      - name: Node.jsを準備
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: actions/setup-java@v4
+      - name: Javaを準備
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - run: npm install
-      - run: npx expo prebuild --platform android --clean
-      - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+      - name: 依存関係をインストール
+        run: npm install
+      - name: Android用プロジェクトを生成
+        run: npx expo prebuild --platform android --clean
+      - name: Androidアプリをビルド
+        run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug
+      - name: Androidアプリを保存
+        uses: actions/upload-artifact@v4
         with:
           name: todo-android-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
   ios-simulator:
+    name: iPhoneシミュレータで確認
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: リポジトリの内容を取得
+        uses: actions/checkout@v4
+      - name: Node.jsを準備
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install
-      - run: npx expo prebuild --platform ios --clean
+      - name: 依存関係をインストール
+        run: npm install
+      - name: iPhone用プロジェクトを生成
+        run: npx expo prebuild --platform ios --clean
 
-      - name: Build iPhone Simulator app
+      - name: iPhoneシミュレータ用アプリをビルド
         run: |
           WORKSPACE=$(find ios -maxdepth 1 -name '*.xcworkspace' | head -n 1)
           SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json | python3 -c 'import json,sys; print(json.load(sys.stdin)["workspace"]["schemes"][0])')
@@ -65,7 +83,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Launch app and capture UI
+      - name: アプリを起動して画面を撮影
         run: |
           DEVICE_UDID=$(xcrun simctl list devices available -j | python3 -c '
           import json, sys
@@ -89,17 +107,19 @@ jobs:
           sleep 5
           xcrun simctl io "$DEVICE_UDID" screenshot ios-screenshot.png
 
-      - uses: actions/upload-artifact@v4
+      - name: iPhoneシミュレータ用アプリを保存
+        uses: actions/upload-artifact@v4
         with:
           name: todo-ios-simulator
           path: ios-build/Build/Products/Release-iphonesimulator/*.app
 
-      - uses: actions/upload-artifact@v4
+      - name: 画面画像を保存
+        uses: actions/upload-artifact@v4
         with:
           name: todo-ios-ui-screenshot
           path: ios-screenshot.png
 
-      - name: Publish latest UI screenshot
+      - name: 最新の画面画像をリポジトリへ反映
         run: |
           mkdir -p preview
           cp ios-screenshot.png preview/ios.png
@@ -107,6 +127,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add preview/ios.png
           if ! git diff --cached --quiet; then
-            git commit -m "Update Todo iPhone UI preview"
+            git commit -m "TodoのiPhone画面プレビューを更新"
             git push
           fi
