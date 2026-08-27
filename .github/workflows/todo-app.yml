@@ -74,7 +74,7 @@ jobs:
       - name: iPhoneシミュレータ用アプリをビルド
         run: |
           WORKSPACE=$(find ios -maxdepth 1 -name '*.xcworkspace' | head -n 1)
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json | python3 -c 'import json,sys; print(json.load(sys.stdin)["workspace"]["schemes"][0])')
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
           xcodebuild \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
@@ -102,7 +102,11 @@ jobs:
           xcrun simctl boot "$DEVICE_UDID" 2>/dev/null || true
           xcrun simctl bootstatus "$DEVICE_UDID" -b
 
-          APP_PATH=$(find ios-build/Build/Products/Release-iphonesimulator -maxdepth 1 -name '*.app' | head -n 1)
+          APP_PATH=$(find ios-build/Build/Products/Release-iphonesimulator -type d -name '*.app' -print -quit)
+          if [ -z "$APP_PATH" ]; then
+            echo "iPhoneシミュレータ用アプリが見つかりません"
+            exit 1
+          fi
           xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
           xcrun simctl launch "$DEVICE_UDID" com.gakkii415.todoapp
           sleep 5
