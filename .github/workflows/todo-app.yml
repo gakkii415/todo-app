@@ -6,6 +6,7 @@ on:
       - 'App.js'
       - 'app.json'
       - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/todo-app.yml'
   workflow_dispatch:
 
@@ -24,7 +25,7 @@ jobs:
         with:
           node-version: '22'
       - name: 依存関係をインストール
-        run: npm install
+        run: npm ci
       - name: Expoで書き出し可能か確認
         run: npx expo export --platform android --output-dir dist
 
@@ -44,7 +45,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: 依存関係をインストール
-        run: npm install
+        run: npm ci
       - name: Android用プロジェクトを生成
         run: npx expo prebuild --platform android --clean
       - name: Androidアプリをビルド
@@ -66,7 +67,7 @@ jobs:
         with:
           node-version: '22'
       - name: 依存関係をインストール
-        run: npm install
+        run: npm ci
       - name: iPhone用プロジェクトを生成
         run: npx expo prebuild --platform ios --clean
 
